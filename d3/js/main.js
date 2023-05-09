@@ -4,7 +4,7 @@
 
     //pseudo-global variables
     var attrArray = ["# of Pros","# Active","# of HOF","Games Played","TDs",
-                        "Most TDs","Games"];; //list of attributes
+                        "Most TDs","Games","Player With Most Touchdowns","Most Games Played"]; //list of attributes
     var expressed = attrArray[0]; //initial attribute
 
     var exp_String = ["Total Number of Pros All Time from each state",
@@ -22,6 +22,17 @@
             }
         }
     }
+
+    //function to move info label with mouse
+    function moveLabel(){
+        //use coordinates of mousemove event to set label coordinates
+        var x = event.clientX + 10,
+            y = event.clientY - 75;
+
+        d3.select(".infolabel")
+            .style("left", x + "px")
+            .style("top", y + "px");
+    };
     
     //begin script when window loads
     window.onload = setMap();
@@ -40,6 +51,7 @@
             .attr("class", "map")
             .attr("width", width)
             .attr("height", height)
+            .style("background-color", "#f2f2f2")
             
 
         //create Albers equal area conic projection centered on France
@@ -110,7 +122,7 @@
 
             //add attribute name options
             var attrOptions = dropdown.selectAll("attrOptions")
-                .data(attrArray)
+                .data(attrArray.slice(0,7))
                 .enter()
                 .append("option")
                 .attr("value", function(d){ return d })
@@ -130,14 +142,10 @@
             
 
             var max_range = d3.max(csvData, function(d) {
-                console.log(d[expressed])
                 return parseFloat(d[expressed])}); 
-            //console.log(max_range);
 
             function scale(val) {
                 var per = (val / max_range * chartHeight) * 0.75;
-                console.log(max_range)
-                console.log(per)
                 return per;
             }
 
@@ -163,7 +171,6 @@
 
                 //Sort bars
                 .sort(function(a, b){
-                   //console.log(a[expressed])
                     return a[expressed] - b[expressed];
                 })
                 .transition() //add animation
@@ -217,19 +224,46 @@
                 .text(titleChange());
         }
 
+        //function to create dynamic label
+        function setLabel(props){
+            
+
+            //label content
+            var labelAttribute = "<h1>" + props[expressed] +
+                "</h1><b>" + expressed + "</b>";
+
+            //create info label div
+            var infolabel = d3.select("body")
+                .append("div")
+                .attr("class", "infolabel")
+                .attr("id", props.postal + "_label")
+                .html(labelAttribute);
+
+            var stateName = infolabel.append("div")
+                .attr("class", "labelname")
+                .html(props.name);
+
+            if(expressed == "Most TDs"){
+                infolabel.style("height", "70px")
+
+                var playername = infolabel.append("div")
+                    .attr("class", "labelname")
+                    .html(props["Player With Most Touchdowns"]);
+            }
+            else if(expressed == "Games"){
+                infolabel.style("height", "70px")
+
+                var playername = infolabel.append("div")
+                    .attr("class", "labelname")
+                    .html(props["Most Games Played"]);
+            }
+            
+        };
+
         
 
         function setEnumerationUnits(states, map, path, colorScale){
-
-            //function to highlight enumeration units and bars
-            function highlight(props){
-                //change stroke
-
-                console.log(props)
-                var selected = d3.selectAll(props.postal)
-                    .style("stroke", "blue")
-                    .style("stroke-width", "2");
-            };
+    
 
             var state = map.selectAll(null)
                 .data(states)
@@ -241,21 +275,20 @@
                 })
                 .attr("d", path)
                 .style("fill", function(d){
-                    //console.log(d)
                     return colorScale(d.properties[expressed]);
                     
                 })
                 .on("mouseover", function(event, d){
-                    console.log(d.properties.postal)
+                    setLabel(d.properties);
                     var selected = d3.selectAll("#" + d.properties.postal)
                         .style("stroke", "blue")
                         .style("stroke-width", "2");
                 })
                 .on("mouseout", function(event, d){
-                    console.log(d.properties.postal)
+                    d3.select(".infolabel")
+                        .remove();
                     var selected = d3.selectAll("#" + d.properties.postal)
                             .style("stroke", function(d){
-                                console.log(d)
                                 if (d.State){
                                     return "none";
                                 }
@@ -264,7 +297,8 @@
                                 }
                             })
                             .style("stroke-width", "2");
-                });
+                })
+                .on("mousemove", moveLabel);
         };
 
         function joinData(stateBorders, csvData){
@@ -305,11 +339,11 @@
     //function to create color scale generator
     function makeColorScale(data){
         var colorClasses = [
-            "#D4B9DA",
-            "#C994C7",
-            "#DF65B0",
-            "#DD1C77",
-            "#980043"
+            "#edf8e9",
+            "#bae4b3",
+            "#74c476",
+            "#31a354",
+            "#006d2c"
         ];
 
         //create color scale generator
@@ -340,7 +374,6 @@
 
         function scale(val) {
             var per = (val / max_range * chartHeight) * 0.75;
-            //console.log(per)
             return per;
         }
 
@@ -374,6 +407,38 @@
             .attr("height", chartHeight)
             //.attr("transform", translate);
 
+        function setLabel(props){
+            //label content
+            var labelAttribute = "<h1>" + props[expressed] +
+            "</h1><b>" + expressed + "</b>";
+
+            //create info label div
+            var infolabel = d3.select("body")
+                .append("div")
+                .attr("class", "infolabel")
+                .attr("id", props.State + "_label")
+                .html(labelAttribute);
+
+            var stateName = infolabel.append("div")
+                .attr("class", "labelname")
+                .html(props.State);
+
+                if(expressed == "Most TDs"){
+                    infolabel.style("height", "70px")
+    
+                    var playername = infolabel.append("div")
+                        .attr("class", "labelname")
+                        .html(props["Player With Most Touchdowns"]);
+                }
+                else if(expressed == "Games"){
+                    infolabel.style("height", "70px")
+    
+                    var playername = infolabel.append("div")
+                        .attr("class", "labelname")
+                        .html(props["Most Games Played"]);
+                }
+        }
+
         
         
         //Example 2.4 line 8...set bars for each state
@@ -398,8 +463,6 @@
                 return scale(parseFloat(d[expressed]));
             })
             .attr("y", function(d){
-                //console.log(parseFloat(d[expressed]));
-                //console.log(yScale(parseFloat(d[expressed])));
                 return chartHeight - scale(parseFloat(d[expressed]));
             })
             
@@ -407,11 +470,16 @@
                 return colorScale(d[expressed]);
             })
             .on("mouseover", function(event, d){
+                setLabel(d);
                 var selected = d3.selectAll("#" + d.State)
                         .style("stroke", "blue")
                         .style("stroke-width", "2");
             })
             .on("mouseout", function(event, d){
+
+                d3.select(".infolabel")
+                        .remove();
+
                 var selected = d3.selectAll("#" + d.State)
                         .style("stroke", function(d){
                             if (d.State){
@@ -422,7 +490,8 @@
                             }
                         })
                         .style("stroke-width", "2");
-            });
+            })
+            .on("mousemove", moveLabel);
 
             //annotate bars with attribute value text
             var numbers = chart.selectAll(".numbers")
